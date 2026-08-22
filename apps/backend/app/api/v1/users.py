@@ -1,0 +1,29 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from app.database.session import get_db
+from app.api.dependencies.auth import get_current_user, RequirePermission
+from app.modules.users.models import User
+from app.modules.users.schemas import UserResponse
+from app.modules.users.service import get_user, list_users
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+@router.get("/me", response_model=UserResponse)
+def read_user_me(current_user: User = Depends(get_current_user)):
+    """
+    Get the currently authenticated user's profile.
+    """
+    return current_user
+
+@router.get("/", response_model=list[UserResponse])
+def read_users(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RequirePermission("users:read"))
+):
+    """
+    Retrieve a list of users. Requires 'users:read' permission.
+    """
+    users = list_users(db, skip=skip, limit=limit)
+    return users

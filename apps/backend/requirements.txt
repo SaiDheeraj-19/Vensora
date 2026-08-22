@@ -8,3 +8,8 @@ httpx
 sqlalchemy
 alembic
 psycopg2-binary
+google-auth
+PyJWT
+passlib[bcrypt]
+requests
+email-validator

@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 # 24 hours
+    
+    # OAuth
+    GOOGLE_CLIENT_ID: str
     
     # PostgreSQL
     POSTGRES_USER: str
