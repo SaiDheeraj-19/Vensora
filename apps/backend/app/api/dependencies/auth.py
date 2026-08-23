@@ -53,11 +53,23 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         
     return user
 
+def get_active_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Dependency to ensure the user has completed their mandatory first-login password change.
+    Use this for all normal business APIs.
+    """
+    if current_user.must_change_password:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must change your initial password before accessing the system."
+        )
+    return current_user
+
 class RequirePermission:
     def __init__(self, required_permission: str):
         self.required_permission = required_permission
         
-    def __call__(self, current_user: User = Depends(get_current_user)):
+    def __call__(self, current_user: User = Depends(get_active_user)):
         # Extract all permission strings for the user's role
         user_permissions = {rp.permission.name for rp in current_user.role.permissions}
         

@@ -18,5 +18,14 @@ class UserResponse(BaseModel):
     role: RoleResponse
     created_at: datetime
     updated_at: datetime
-    
     model_config = ConfigDict(from_attributes=True)
+
+class UserProvisionRequest(BaseModel):
+    email: EmailStr
+    display_name: str
+    role_name: str  # SUPER_ADMIN, ADMIN, or EMPLOYEE
+    department_id: Optional[uuid.UUID] = None
+
+class ProvisionResponse(BaseModel):
+    user: UserResponse
+    temporary_password: str

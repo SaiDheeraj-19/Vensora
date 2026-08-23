@@ -8,5 +8,7 @@ from app.modules.agents.models import Agent
 from app.modules.campaigns.models import Campaign
 from app.modules.contacts.models import Contact
 from app.modules.calls.models import Call
+from app.modules.crm.models import Ticket, CustomerProfile, KnowledgeDocument
+from app.core.audit import AuditLog
 
 __all__ = ["Base"]

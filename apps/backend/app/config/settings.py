@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     # Qdrant
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: int = 6333
+    
+    # Asterisk (ARI)
+    ASTERISK_HOST: str = "asterisk"
+    ASTERISK_PORT: int = 8088
+    ASTERISK_ARI_USER: str = "asterisk"
+    ASTERISK_ARI_PASSWORD: str = "asterisk"
+    ASTERISK_APP_NAME: str = "vensora"
 
     model_config = SettingsConfigDict(
         env_file=".env",

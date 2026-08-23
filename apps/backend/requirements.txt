@@ -13,3 +13,8 @@ PyJWT
 passlib[bcrypt]
 requests
 email-validator
+websockets
+qdrant-client
+groq
+langgraph
+langchain-core

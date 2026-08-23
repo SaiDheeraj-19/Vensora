@@ -3,10 +3,23 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.api.dependencies.auth import get_current_user, RequirePermission
 from app.modules.users.models import User
-from app.modules.users.schemas import UserResponse
-from app.modules.users.service import get_user, list_users
+from app.modules.users.schemas import UserResponse, UserProvisionRequest, ProvisionResponse
+from app.modules.users.service import get_user, list_users, provision_user
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+@router.post("/provision", response_model=ProvisionResponse, status_code=status.HTTP_201_CREATED)
+def provision_new_user(
+    request: UserProvisionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RequirePermission("users:create"))
+):
+    """
+    Provision a new Admin or Employee. Requires 'users:create' permission.
+    Returns the created user and their temporary, one-time password.
+    """
+    user, temp_password = provision_user(db, request, current_user)
+    return ProvisionResponse(user=user, temporary_password=temp_password)
 
 @router.get("/me", response_model=UserResponse)
 def read_user_me(current_user: User = Depends(get_current_user)):

@@ -70,3 +70,66 @@ def authenticate_google_user(db: Session, request: GoogleLoginRequest) -> TokenR
         must_change_password=user.must_change_password,
         status=user.status.value
     )
+
+def authenticate_local_user(db: Session, request: EmailLoginRequest) -> TokenResponse:
+    from app.security.password import verify_password
+    
+    stmt = select(User).where(User.email == request.email)
+    user = db.execute(stmt).scalar_one_or_none()
+    
+    if not user or not user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+        
+    if not verify_password(request.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+        
+    if user.status not in (UserStatus.ACTIVE, UserStatus.PENDING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Account is {user.status.value}",
+        )
+        
+    if user.status == UserStatus.PENDING:
+        user.status = UserStatus.ACTIVE
+        db.commit()
+
+    access_token = create_access_token(subject=str(user.id))
+    
+    return TokenResponse(
+        access_token=access_token,
+        user_id=user.id,
+        must_change_password=user.must_change_password,
+        status=user.status.value
+    )
+
+def change_password(db: Session, user: User, request: PasswordChangeRequest) -> TokenResponse:
+    from app.security.password import verify_password, get_password_hash
+    from datetime import datetime, timezone
+    
+    if not user.password_hash or not verify_password(request.old_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid old password",
+        )
+        
+    user.password_hash = get_password_hash(request.new_password)
+    user.must_change_password = False
+    user.password_changed_at = datetime.now(timezone.utc)
+    
+    db.commit()
+    
+    # Issue a fresh JWT since password was changed successfully
+    access_token = create_access_token(subject=str(user.id))
+    
+    return TokenResponse(
+        access_token=access_token,
+        user_id=user.id,
+        must_change_password=user.must_change_password,
+        status=user.status.value
+    )
