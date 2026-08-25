@@ -59,12 +59,12 @@ export default function LiveCallsView() {
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ID: {call.call_id.substring(0, 8)}</p>
                 </div>
                 {call.state === 'ESCALATING' ? (
-                  <span className="badge low" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span className="badge low">
                     <ShieldAlert size={14} /> Escalating
                   </span>
                 ) : (
-                  <span className="badge ringing" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <CheckCircle size={14} /> {call.state}
+                  <span className="badge ringing">
+                    <div className="pulse-dot"></div> {call.state}
                   </span>
                 )}
               </div>

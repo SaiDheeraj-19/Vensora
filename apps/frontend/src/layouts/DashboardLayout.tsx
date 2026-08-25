@@ -30,15 +30,17 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="dashboard-container animate-fade-in">
-      <nav className="sidebar">
+    <>
+      <div className="mesh-bg">
+        <div className="mesh-orb orb-1"></div>
+        <div className="mesh-orb orb-2"></div>
+      </div>
+      <div className="dashboard-container animate-fade-in">
+        <nav className="sidebar">
         <div style={{ marginBottom: 32, padding: '0 16px' }}>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.25rem' }}>
-            <div style={{ background: 'var(--accent-primary)', padding: 6, borderRadius: 8 }}>
-              <Shield size={20} color="white" />
-            </div>
-            Vensora
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <img src="/logo.png" alt="Vensora AI Logo" style={{ height: 48, objectFit: 'contain' }} />
+          </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 4, textTransform: 'uppercase' }}>
             {role.replace('_', ' ')}
           </p>
@@ -90,5 +92,6 @@ export default function DashboardLayout() {
         <Outlet />
       </main>
     </div>
+    </>
   );
 }

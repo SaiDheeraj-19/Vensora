@@ -37,12 +37,16 @@ export default function LoginView() {
   };
 
   return (
-    <div className="dashboard-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <div className="glass-panel animate-fade-in" style={{ width: 400, textAlign: 'center' }}>
+    <>
+      <div className="mesh-bg">
+        <div className="mesh-orb orb-1"></div>
+        <div className="mesh-orb orb-2"></div>
+      </div>
+      <div className="dashboard-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="glass-panel animate-fade-in" style={{ width: 400, textAlign: 'center' }}>
         <div style={{ marginBottom: 24 }}>
-          <LogIn size={48} color="var(--accent-primary)" style={{ margin: '0 auto' }} />
-          <h2 style={{ marginTop: 16 }}>Vensora Admin</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Sign in to manage operations</p>
+          <img src="/logo.png" alt="Vensora AI Logo" style={{ height: 64, objectFit: 'contain', margin: '0 auto' }} />
+          <p style={{ color: 'var(--text-secondary)', marginTop: 16 }}>Sign in to manage operations</p>
         </div>
         
         {error && <div style={{ color: 'var(--danger)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</div>}
@@ -66,5 +70,6 @@ export default function LoginView() {
         </form>
       </div>
     </div>
+    </>
   );
 }

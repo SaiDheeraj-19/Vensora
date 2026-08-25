@@ -11,6 +11,7 @@ def test_settings_load_successfully():
 
 def test_settings_validation_error_on_missing_secret(monkeypatch):
     monkeypatch.delenv("SECRET_KEY", raising=False)
+    from app.config.settings import Settings
     with pytest.raises(ValidationError) as exc_info:
-        get_settings()
+        Settings(_env_file=None)
     assert "SECRET_KEY" in str(exc_info.value)
