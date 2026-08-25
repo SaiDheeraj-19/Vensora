@@ -1,17 +1,25 @@
 import logging
 from typing import Callable, Any
+import webrtcvad
 
 logger = logging.getLogger(__name__)
 
 class VoiceActivityDetector:
     """
-    Placeholder service for integrating Voice Activity Detection (VAD).
-    In Phase 2, this will wrap WebRTC VAD or Silero VAD to analyze incoming 
-    RTP/Audiohook streams from Asterisk.
+    Voice Activity Detection using WebRTC VAD.
+    Analyzes incoming 16kHz PCM audio chunks to detect speech state.
     """
-    def __init__(self, sample_rate: int = 16000):
+    def __init__(self, sample_rate: int = 16000, aggressiveness: int = 3):
         self.sample_rate = sample_rate
+        self.vad = webrtcvad.Vad(aggressiveness)
+        
         self.is_speaking = False
+        self.consecutive_speech_frames = 0
+        self.consecutive_silence_frames = 0
+        
+        # Thresholds (assuming 20ms frames)
+        self.speech_start_threshold = 3  # 60ms of speech
+        self.speech_stop_threshold = 25  # 500ms of silence
         
         # Callbacks
         self.on_speech_start: Callable[[str], Any] | None = None
@@ -19,24 +27,34 @@ class VoiceActivityDetector:
 
     def process_audio_chunk(self, call_id: str, audio_bytes: bytes):
         """
-        Process an incoming chunk of raw PCM audio.
+        Process a 20ms chunk (320 samples / 640 bytes at 16kHz 16-bit PCM).
         """
-        # [PLACEHOLDER] Insert Silero/WebRTC VAD logic here.
-        
-        # Example pseudo-logic:
-        # probability = self.model(audio_bytes, self.sample_rate)
-        # current_speaking = probability > 0.5
-        
-        current_speaking = False # Mock evaluation
-        
-        if current_speaking and not self.is_speaking:
-            self.is_speaking = True
-            logger.debug(f"[{call_id}] SPEECH_START detected")
-            if self.on_speech_start:
-                self.on_speech_start(call_id)
+        if len(audio_bytes) != 640:
+            # VAD requires exactly 10, 20, or 30ms frames.
+            # For this phase, we skip malformed frames or buffer them appropriately in the audio stream handler.
+            return
+            
+        try:
+            is_speech = self.vad.is_speech(audio_bytes, self.sample_rate)
+            
+            if is_speech:
+                self.consecutive_speech_frames += 1
+                self.consecutive_silence_frames = 0
                 
-        elif not current_speaking and self.is_speaking:
-            self.is_speaking = False
-            logger.debug(f"[{call_id}] SPEECH_STOP detected")
-            if self.on_speech_stop:
-                self.on_speech_stop(call_id)
+                if not self.is_speaking and self.consecutive_speech_frames >= self.speech_start_threshold:
+                    self.is_speaking = True
+                    logger.debug(f"[{call_id}] SPEECH_START detected")
+                    if self.on_speech_start:
+                        self.on_speech_start(call_id)
+            else:
+                self.consecutive_silence_frames += 1
+                self.consecutive_speech_frames = 0
+                
+                if self.is_speaking and self.consecutive_silence_frames >= self.speech_stop_threshold:
+                    self.is_speaking = False
+                    logger.debug(f"[{call_id}] SPEECH_STOP detected")
+                    if self.on_speech_stop:
+                        self.on_speech_stop(call_id)
+                        
+        except Exception as e:
+            logger.error(f"VAD processing error: {e}")

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     MINIO_ROOT_PASSWORD: str
     MINIO_HOST: str = "minio"
     MINIO_PORT: int = 9000
+    RECORDING_RETENTION_DAYS: int = 30 # Gap 12: Configurable retention period
     
     # Qdrant
     QDRANT_HOST: str = "qdrant"

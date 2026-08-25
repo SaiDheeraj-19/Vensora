@@ -18,3 +18,14 @@ qdrant-client
 groq
 langgraph
 langchain-core
+faster-whisper
+webrtcvad
+sentence-transformers
+python-multipart
+boto3
+httpx
+redis
+sentence-transformers
+prometheus-client
+transformers
+webrtcvad

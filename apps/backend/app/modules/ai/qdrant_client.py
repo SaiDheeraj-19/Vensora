@@ -26,13 +26,29 @@ class QdrantService:
         """
         logger.debug(f"Searching Qdrant for: '{query}'")
         
-        # MOCK IMPLEMENTATION
-        # In reality:
-        # 1. Embed the query using an embedding model (e.g. BGE-M3)
-        # 2. results = self.client.search(collection_name=self.collection_name, query_vector=embedding, limit=limit)
+        # In a real setup, embed the query first
+        from app.modules.ai.embeddings import embeddings_service
+        # query_vector = embeddings_service.generate_embeddings([query])[0]
+        # results = self.client.search(collection_name=self.collection_name, query_vector=query_vector, limit=limit)
         
         return [
             {"score": 0.95, "payload": {"text": f"Mock knowledge related to: {query}"}}
         ]
+        
+    def ingest_chunks(self, chunks: List[Dict[str, Any]], vectors: List[List[float]]):
+        """
+        Insert embedded chunks into Qdrant.
+        """
+        logger.info(f"Ingesting {len(chunks)} chunks into Qdrant collection: {self.collection_name}")
+        
+        # MOCK IMPLEMENTATION
+        # In a real setup, construct PointStructs and upsert:
+        # points = [
+        #     PointStruct(id=str(uuid.uuid4()), vector=vec, payload=chunk) 
+        #     for chunk, vec in zip(chunks, vectors)
+        # ]
+        # self.client.upsert(collection_name=self.collection_name, points=points)
+        
+        return True
 
 qdrant_service = QdrantService()

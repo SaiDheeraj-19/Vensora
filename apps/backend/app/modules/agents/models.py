@@ -13,3 +13,4 @@ class Agent(Base):
     provider: Mapped[str] = mapped_column(String(50), nullable=False) # e.g. elevenlabs, playht
     
     campaigns = relationship("Campaign", back_populates="agent")
+    calls = relationship("Call", back_populates="agent")

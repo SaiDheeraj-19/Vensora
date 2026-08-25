@@ -5,6 +5,7 @@ from sqlalchemy import String, Enum, ForeignKey, Text, JSON
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database.base import Base
+from app.modules.users.models import User
 
 class TicketStatus(str, enum.Enum):
     OPEN = "OPEN"
@@ -65,3 +66,21 @@ class KnowledgeDocument(Base):
     
     # Audit tracking
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
+
+
+class PromptStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"
+
+class PromptTemplate(Base):
+    """
+    Database-backed prompt management.
+    """
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), index=True, nullable=False) # Removed unique=True to allow versions
+    version: Mapped[int] = mapped_column(default=1, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[PromptStatus] = mapped_column(Enum(PromptStatus), default=PromptStatus.DRAFT, nullable=False)
+    
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)

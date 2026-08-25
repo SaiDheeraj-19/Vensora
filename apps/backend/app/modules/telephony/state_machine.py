@@ -34,14 +34,28 @@ class CallStateMachine:
         self.state = initial_state
         self.context: Dict[str, Any] = {}
 
-    def transition_to(self, new_state: CallStateEnum, reason: Optional[str] = None) -> bool:
-        """Attempts to transition to a new state."""
-        allowed_states = self.VALID_TRANSITIONS.get(self.state, set())
+    def transition_to(self, new_state: CallStateEnum, reason: str = ""):
+        """
+        Transitions the call to a new state and records the history.
+        """
+        logger.info(f"[{self.call_id}] State transition: {self.current_state.name} -> {new_state.name} ({reason})")
+        self.current_state = new_state
+        self.history.append({
+            "state": new_state.name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "reason": reason
+        })
         
-        if new_state not in allowed_states:
-            logger.error(f"Invalid transition attempted: {self.state} -> {new_state}. Reason: {reason}")
-            return False
+        # Broadcast the transition to the Admin Dashboard
+        import asyncio
+        from app.modules.telephony.router import broadcast_call_update
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(broadcast_call_update(str(self.call_id), new_state.name, self.caller_id))
+        except RuntimeError:
+            pass # No running event loop
             
-        logger.info(f"Transitioning: {self.state} -> {new_state}. Reason: {reason}")
-        self.state = new_state
+        # If the call ends, persist the final state
+        if new_state in [CallStateEnum.COMPLETED, CallStateEnum.FAILED]:
+            self._persist_final_state()
         return True

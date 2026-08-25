@@ -8,20 +8,32 @@ from app.core.exceptions import setup_exception_handlers
 from contextlib import asynccontextmanager
 import asyncio
 from app.modules.telephony.services.websocket_client import ari_ws_client
+from app.modules.telephony.audio_stream import audio_server
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Setup structured JSON logging
     setup_logging()
+    # Register Providers
+    from app.core.providers.registry import registry
+    from app.core.providers.vector import QdrantProvider
+    from app.core.providers.embedding import LocalEmbeddingProvider
+    from app.core.providers.emotion import LocalTextEmotionProvider
     
-    # Start ARI WebSocket Client in the background
+    registry.register("VectorDBProvider", QdrantProvider())
+    registry.register("EmbeddingProvider", LocalEmbeddingProvider())
+    registry.register("EmotionProvider", LocalTextEmotionProvider())
+    
+    # Start ARI WebSocket Client and AudioSocket server in the background
     ari_task = asyncio.create_task(ari_ws_client.connect())
+    audio_task = asyncio.create_task(audio_server.start())
     
     yield
     
     # Graceful shutdown
     await ari_ws_client.disconnect()
     ari_task.cancel()
+    audio_task.cancel()
 
 app = FastAPI(
     title="Vensora API",
@@ -48,5 +60,5 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health")
-def health_check():
+async def health_check():
     return {"status": "ok"}
