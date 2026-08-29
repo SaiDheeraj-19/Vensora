@@ -7,8 +7,6 @@ from app.core.middleware import CorrelationIdMiddleware
 from app.core.exceptions import setup_exception_handlers
 from contextlib import asynccontextmanager
 import asyncio
-from app.modules.telephony.services.websocket_client import ari_ws_client
-from app.modules.telephony.audio_stream import audio_server
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,6 +14,14 @@ async def lifespan(app: FastAPI):
     setup_logging()
     # Register Providers
     from app.core.providers.registry import registry
+    from app.modules.agents import models as _agent_models
+    from app.modules.calls import models as _call_models
+    from app.modules.campaigns import models as _campaign_models
+    from app.modules.contacts import models as _contact_models
+    from app.modules.crm import models as _crm_models
+    from app.modules.departments import models as _dept_models
+    from app.modules.roles import models as _role_models
+    from app.modules.users import models as _user_models
     from app.core.providers.vector import QdrantProvider
     from app.core.providers.embedding import LocalEmbeddingProvider
     from app.core.providers.emotion import LocalTextEmotionProvider
@@ -24,16 +30,8 @@ async def lifespan(app: FastAPI):
     registry.register("EmbeddingProvider", LocalEmbeddingProvider())
     registry.register("EmotionProvider", LocalTextEmotionProvider())
     
-    # Start ARI WebSocket Client and AudioSocket server in the background
-    ari_task = asyncio.create_task(ari_ws_client.connect())
-    audio_task = asyncio.create_task(audio_server.start())
-    
     yield
     
-    # Graceful shutdown
-    await ari_ws_client.disconnect()
-    ari_task.cancel()
-    audio_task.cancel()
 
 app = FastAPI(
     title="Vensora API",

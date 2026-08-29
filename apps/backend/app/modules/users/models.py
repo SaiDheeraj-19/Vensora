@@ -6,7 +6,8 @@ from sqlalchemy import String, Boolean, Enum, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database.base import Base
-
+import app.modules.departments.models
+import app.modules.roles.models
 class UserStatus(str, enum.Enum):
     PENDING = "PENDING"
     ACTIVE = "ACTIVE"

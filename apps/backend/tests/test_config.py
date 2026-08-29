@@ -6,7 +6,7 @@ def test_settings_load_successfully():
     settings = get_settings()
     assert settings.SECRET_KEY == "test_secret_key_1234567890"
     assert settings.POSTGRES_USER == "test_user"
-    assert settings.DATABASE_URL == "postgresql://test_user:test_pass@postgres:5432/test_db"
+    assert settings.DATABASE_URL == "postgresql://test_user:test_pass@localhost:5433/test_db"
     assert settings.ENVIRONMENT == "development"
 
 def test_settings_validation_error_on_missing_secret(monkeypatch):

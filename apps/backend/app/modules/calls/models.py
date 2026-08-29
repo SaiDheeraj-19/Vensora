@@ -1,10 +1,11 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy import String, Integer, Text, ForeignKey, DateTime
 from datetime import datetime, timezone
 
 from app.database.base import Base
+from app.modules.campaigns import models
 
 class Call(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
