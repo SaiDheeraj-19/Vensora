@@ -19,6 +19,14 @@ class TicketPriority(str, enum.Enum):
     HIGH = "HIGH"
     URGENT = "URGENT"
 
+class ShipmentStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SHIPPED = "SHIPPED"
+    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    DELIVERED = "DELIVERED"
+    DELAYED = "DELAYED"
+    CANCELLED = "CANCELLED"
+
 class CustomerProfile(Base):
     """
     External caller/customer entity.
@@ -33,6 +41,22 @@ class CustomerProfile(Base):
     metadata_tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     
     tickets = relationship("Ticket", back_populates="customer")
+    shipments = relationship("Shipment", back_populates="customer")
+
+class Shipment(Base):
+    """
+    Customer shipment/order tracked by the logistics company.
+    """
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tracking_number: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    status: Mapped[ShipmentStatus] = mapped_column(Enum(ShipmentStatus), default=ShipmentStatus.PENDING, nullable=False)
+    
+    estimated_delivery: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    current_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    
+    customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("customer_profile.id"), nullable=False)
+    
+    customer = relationship("CustomerProfile", back_populates="shipments")
 
 
 class Ticket(Base):

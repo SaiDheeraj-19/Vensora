@@ -1,0 +1,187 @@
+Knowledge Base - ISP Sample
+AI Contact Center - Phase 1 ISP Developer Test Documentation
+HimalNet Broadband Pvt. Ltd.
+Synthetic ISP Sample - Developer Test Data Only. All customer names, phone numbers, IP addresses, URLs, credentials, prices, network elements and records are fictional and must not be used in production.
+
+1. Product Documentation
+Plan Code
+Segment
+Speed
+Sample Monthly Price
+Notes
+HOME-100M
+Residential
+100 Mbps
+NPR 1,200
+Synthetic test plan
+HOME-200M
+Residential
+200 Mbps
+NPR 1,450
+Synthetic test plan
+HOME-300M
+Residential
+300 Mbps
+NPR 1,750
+Synthetic test plan
+SME-300M
+SME
+300 Mbps
+NPR 3,500
+Priority support test plan
+SME-500M
+SME
+500 Mbps
+NPR 5,500
+Static IP optional in test catalog
+
+Important developer rule: the AI should prefer the live product catalog API when available. These sample prices are test data and must not be treated as production truth.
+1.1 Service Components
+FTTH access: OLT -> PON -> splitter -> drop fiber -> ONU/ONT -> customer router/device.
+Authentication/session: typically PPPoE/IPoE -> AAA/RADIUS -> BNG subscriber session.
+CPE management: ACS/TR-069 or USP where deployed.
+Business support systems: CRM, Billing/BSS, payment reconciliation, ticketing, inventory and provisioning.
+Operational support: NMS/EMS, incident/outage manager, monitoring and NOC workflows.
+2. Company Policies
+2.1 Customer Verification Policy
+Public product/coverage/process information may be given without account verification.
+Balance, payment history, service status, ticket details, plan change, contact-detail change and cancellation require verification.
+Preferred sample method: OTP to registered mobile. After three failed attempts, stop sensitive processing and offer a human agent.
+Never ask for banking password, card PIN/CVV, full card number or OTP belonging to another service.
+2.2 Service Suspension and Reactivation Policy - Sample
+Billing status is authoritative for expiry/suspension. The AI must not infer suspension solely from loss of internet.
+If payment is confirmed and provisioning supports automatic reactivation, use only the approved workflow.
+If payment is confirmed but service remains disabled beyond the normal synchronization window, create BILLING_PROVISIONING ticket.
+No discretionary waiver or credit can be approved by the Phase 1 AI unless a dedicated policy/tool explicitly permits it.
+2.3 Fair Usage / Traffic Policy - Sample
+If a plan has FUP/QoS rules, the AI must retrieve the active policy/profile from the BSS or approved KB before explaining speed impact.
+Do not accuse the customer of overuse without authoritative usage/profile data.
+Network congestion, Wi-Fi limitation and FUP shaping must be treated as separate possible causes.
+2.4 Outage Communication Policy - Sample
+Only active incident records or approved NOC bulletins may be presented as confirmed outages.
+Communicate affected area, incident reference and approved customer message. Provide ETA only when an approved ETA field exists.
+When ETA changes, use the latest incident record rather than older call notes or cached KB content.
+3. Training Manuals
+3.1 ISP Fault-Domain Decision Guide
+Signal / Observation
+Likely Domain
+AI Next Step
+LOS red / ONU offline / low optical Rx
+Access fiber / PON / ONU
+Check incident/OLT alarms; create optical fault; Field Ops as needed.
+PON normal but no AAA session
+Authentication / BNG / provisioning / CPE WAN
+Read AAA failure reason, billing/provisioning state, CPE WAN status.
+AAA session UP, wired speed normal, Wi-Fi poor
+Home Wi-Fi / device
+Guide placement, band, interference and device tests.
+AAA session UP, wired speed poor, area congestion alarm
+Network performance
+Create performance/congestion ticket; NOC.
+Billing suspended / expired
+Billing / service entitlement
+Explain renewal; verify payment; approved reactivation flow.
+Many customers/OLT/PON alarm
+Area/access incident
+Link to outage and follow incident messaging.
+Repeated ticket same symptom
+Chronic/repeat fault
+Escalate NOC L2/Field Ops with prior ticket references.
+
+3.2 Conversation Principles
+Ask one troubleshooting question/action at a time during a voice call.
+Restate the issue in ISP terms without overclaiming root cause.
+Use telemetry as evidence, not as a reason to overwhelm the caller with technical jargon.
+Never instruct the caller to open fiber connectors or perform unsafe electrical work.
+Do not recommend factory reset unless a specific approved SOP requires it; factory reset can erase PPPoE/Wi-Fi settings.
+Before transfer, summarize: service ID, intent, language, verification, account state, outage result, ONU/AAA findings, actions already tried and ticket ID.
+4. User Guides
+4.1 Safe ONU/Router Restart
+Confirm the ONU/ONT and Wi-Fi router have power.
+Turn off the Wi-Fi router and ONU/ONT using their power switches/adapters. Do not disconnect the fiber connector.
+Wait about 20 seconds.
+Turn on the ONU/ONT first and wait for PON/Internet indicators to stabilize.
+Turn on the Wi-Fi router and wait for Wi-Fi to return.
+If LOS remains red/blinking, stop repeated resets and report the optical fault.
+4.2 Basic Wi-Fi Troubleshooting
+Test near the router with one device.
+Confirm the correct SSID and try 5 GHz for speed at short range or 2.4 GHz for longer range where appropriate.
+Pause large downloads on other devices and retest.
+If possible, compare with a wired Ethernet test.
+If wired speed is normal but Wi-Fi remains poor, treat the issue as local Wi-Fi/CPE rather than declaring an ISP backbone fault.
+5. Operational Documents
+5.1 Known Outage Bulletin - Synthetic
+Field
+Value
+Incident ID
+INC-TEST-20831
+Status
+OPEN
+Severity
+P2
+Affected Area
+KTM-LTP-07 Test Zone
+Affected Element
+OLT-TEST-LTP-01 / feeder fiber
+Customer Message
+Service interruption is under restoration due to a fiber fault.
+Approved ETA
+2026-08-08 03:30 NPT
+Last Updated
+2026-08-08 00:45 NPT
+
+5.2 Planned Maintenance Bulletin - Synthetic
+MAINT-TEST-0812: Access aggregation maintenance scheduled for 2026-08-12 01:00-03:00 NPT in Test Zone B. Expected service interruption: up to 20 minutes. Use only for date/time and planned-maintenance retrieval tests.
+6. FAQ Documents
+English FAQ
+Nepali Sample
+Answer Intent
+My internet is down.
+मेरो इन्टरनेट चलेको छैन।
+Run no-internet diagnostic flow.
+The LOS light is red.
+LOS रातो छ।
+Optical/access fault flow.
+My internet is very slow.
+इन्टरनेट धेरै स्लो छ।
+Separate Wi-Fi vs wired/network performance.
+I already paid my bill.
+मैले पैसा तिरिसकेको छु।
+Check payment + provisioning status.
+When will the outage be fixed?
+समस्या कहिले ठीक हुन्छ?
+Use approved incident ETA only if present.
+I want to upgrade my package.
+म प्याकेज अपग्रेड गर्न चाहन्छु।
+Verify, fetch live catalog, confirm and create request.
+Please connect me to an agent.
+मलाई एजेन्टसँग कुरा गराउनुहोस्।
+Immediate human handoff.
+
+7. RAG Metadata Recommendation
+Metadata
+Example
+document_type
+sop / policy / product / faq / outage / user_guide
+industry
+ISP
+domain
+billing / wifi / optical / aaa / outage / sales
+language
+en / ne
+segment
+residential / SME / all
+effective_from
+2026-08-01
+effective_to
+null or expiry date
+authority
+Product / NOC / Billing / Security
+version
+1.0
+priority
+live_api > active_incident > latest_policy > faq
+synthetic
+true
+
+RAG precedence rule for testing: live operational APIs and active incident records override static sample documents for time-sensitive facts such as outage status, ETA, package eligibility, balance and network telemetry.

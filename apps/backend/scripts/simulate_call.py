@@ -1,10 +1,13 @@
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import logging
 from dotenv import load_dotenv
 
 # Load production environment variables from .env
-load_dotenv()
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+load_dotenv(dotenv_path=env_path)
 
 # Setup basic logging to see everything output to terminal
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -31,8 +34,6 @@ async def simulate_live_call():
     registry.register("EmotionProvider", LocalTextEmotionProvider())
     registry.register("LLMProvider", GroqProvider())
     
-    # We mock Qdrant and Embeddings for this test so we don't need a real DB running
-    os.environ["QDRANT_HOST"] = "mock"
     registry.register("VectorDBProvider", QdrantProvider())
     registry.register("EmbeddingProvider", LocalEmbeddingProvider())
     
@@ -41,37 +42,41 @@ async def simulate_live_call():
     state_machine = CallStateMachine(initial_state=CallStateEnum.PROCESSING)
     channel_id = "SIM-123"
     
-    # The utterance the customer just screamed into the phone
-    original_utterance = "This is ridiculous! Where the hell is my shipment? I've been waiting all week and your company is completely useless!"
-    print(f"\n📞 [CUSTOMER SPEAKS]: \"{original_utterance}\"")
+    print("\n📞 Call connected. Type 'exit' to hang up.")
     
-    # -------------------------------------------------------------
-    # THIS REPLICATES THE EXACT LOGIC IN event_handler.py
-    # -------------------------------------------------------------
-    utterance_for_ai = original_utterance
-    
-    try:
-        emotion_provider = registry.get("EmotionProvider")
-        emotion_result = emotion_provider.detect_emotion(original_utterance)
-        emotion = emotion_result.get("emotion", "neutral")
-        score = emotion_result.get("score", 0.0)
-        
-        print(f"\n🧠 [EMOTION DETECTION]: {emotion.upper()} (Confidence: {score:.2f})")
-        
-        if emotion == "anger" and score > 0.6:
-            print(f"🚨 [ALERT]: High frustration detected. Intercepting transcript before AI processing...")
-            utterance_for_ai = f"{original_utterance} [SYSTEM HINT: The customer is currently speaking with {emotion}]"
+    while True:
+        try:
+            original_utterance = input("\n👤 [YOU]: ")
+        except (KeyboardInterrupt, EOFError):
+            break
             
-    except Exception as e:
-        print(f"Emotion detection failed: {e}")
+        if not original_utterance.strip():
+            continue
+            
+        if original_utterance.strip().lower() in ['exit', 'quit', 'hangup', 'q']:
+            print("📞 [CALL ENDED]")
+            break
+        
+        utterance_for_ai = original_utterance
+        
+        try:
+            emotion_provider = registry.get("EmotionProvider")
+            emotion_result = emotion_provider.detect_emotion(original_utterance)
+            emotion = emotion_result.get("emotion", "neutral")
+            score = emotion_result.get("score", 0.0)
+            
+            if emotion == "anger" and score > 0.6:
+                print(f"🚨 [SYSTEM]: High frustration detected ({score:.2f}). Adjusting AI tone...")
+                utterance_for_ai = f"{original_utterance} [SYSTEM HINT: The customer is currently speaking with {emotion}]"
+        except Exception:
+            pass
 
-    print("\n🤖 [LANGGRAPH AI THINKING]...")
-    response_text = await process_utterance(channel_id, utterance_for_ai)
-    
-    print("\n" + "="*60)
-    print("🎤 [AI RESPONSE TTS]:")
-    print(f"\"{response_text}\"")
-    print("="*60 + "\n")
+        print("🤖 [VENSORA THINKING]...")
+        response_text = await process_utterance(channel_id, utterance_for_ai)
+        
+        print("\n" + "="*60)
+        print(f"🎧 [VENSORA]: \"{response_text}\"")
+        print("="*60)
     
 if __name__ == "__main__":
     asyncio.run(simulate_live_call())

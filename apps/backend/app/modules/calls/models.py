@@ -1,11 +1,17 @@
 import uuid
+import enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy import String, Integer, Text, ForeignKey, DateTime
 from datetime import datetime, timezone
 
 from app.database.base import Base
-from app.modules.campaigns import models
+from app.modules.contacts.models import Contact
+from app.modules.campaigns.models import Campaign
+
+class CallDirection(str, enum.Enum):
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
 
 class Call(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

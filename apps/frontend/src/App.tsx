@@ -8,6 +8,7 @@ import KnowledgeBaseView from './pages/KnowledgeBaseView';
 import UsersView from './pages/UsersView';
 import CallHistoryView from './pages/CallHistoryView';
 import ContactsView from './pages/ContactsView';
+import TicketsView from './pages/TicketsView';
 import './index.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="users" element={<UsersView />} />
           <Route path="history" element={<CallHistoryView />} />
           <Route path="contacts" element={<ContactsView />} />
+          <Route path="tickets" element={<TicketsView />} />
         </Route>
       </Routes>
     </BrowserRouter>

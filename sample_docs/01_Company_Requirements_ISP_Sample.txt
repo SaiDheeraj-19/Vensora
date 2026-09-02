@@ -1,0 +1,219 @@
+Company Requirements - ISP Sample
+AI Contact Center - Phase 1 ISP Developer Test Documentation
+HimalNet Broadband Pvt. Ltd.
+Synthetic ISP Sample - Developer Test Data Only. All customer names, phone numbers, IP addresses, URLs, credentials, prices, network elements and records are fictional and must not be used in production.
+
+1. Business Requirements
+ID
+Requirement
+Phase 1 Expected Capability
+BR-01
+24x7 ISP customer support
+AI handles first-line inbound calls continuously; human queues operate per business schedule.
+BR-02
+Multilingual voice
+English and Nepali speech support; preserve language across troubleshooting and handoff.
+BR-03
+ISP intent automation
+Recognize internet down, LOS, slow speed, Wi-Fi, intermittent, billing, renewal, package, installation, relocation, static IP, outage, complaint and cancellation/retention intents.
+BR-04
+Customer 360 lookup
+Retrieve identity, address/area, plan, status, balance, device/ONU reference, recent tickets and service metadata from approved systems.
+BR-05
+Network-aware troubleshooting
+Use outage, AAA/BNG session, OLT/ONU optical state and ACS/CPE data where integrated; never infer unavailable telemetry.
+BR-06
+Ticket automation
+Create/update support cases with structured diagnosis, priority, fault domain, call ID and summary.
+BR-07
+Human handoff
+Warm transfer to appropriate queue with context; caller should not repeat all information.
+BR-08
+Outbound automation (optional P1)
+Support approved callbacks, payment reminders, outage updates or installation confirmation campaigns.
+BR-09
+Analytics
+Capture intent, containment, transfer reason, AHT, repeat calls, sentiment, resolution code and tool errors.
+BR-10
+Safety and trust
+No unauthorized account changes, secret disclosure or invented SLA/ETA/credits.
+
+2. Standard Operating Procedures (SOPs)
+2.1 No Internet - ISP L1 Diagnostic SOP
+Identify the caller and service account. Perform OTP or approved verification before exposing account-specific status.
+Check CRM subscription state: ACTIVE, SUSPENDED, TERMINATED, PENDING_INSTALL or TEMP_BLOCK.
+Check active area outage/maintenance. If a matching outage exists, communicate only approved details and link the interaction to the outage.
+Ask for ONU indicators if telemetry is unavailable. If LOS is red/blinking or optical Rx is below configured threshold, classify as optical/access fault and avoid repeated factory reset.
+If PON/optical state is normal, check AAA/RADIUS or BNG session state. If no session exists, check authentication/provisioning reason code.
+If billing shows suspension/non-payment, explain payment/renewal process and run approved reactivation workflow after confirmed payment when allowed.
+If session is active, perform safe CPE/Wi-Fi checks: router power, WAN link, DHCP/PPPoE state, one controlled restart, wired-vs-Wi-Fi differentiation.
+If unresolved, create ticket with fault domain, diagnostics, telemetry snapshot/reference and customer impact; route according to priority and escalation matrix.
+Provide ticket/reference number and update channel. Never promise a restoration time not provided by an authoritative outage/work-order system.
+2.2 Slow Internet / Performance SOP
+Confirm expected subscribed speed and whether the complaint is on Wi-Fi, wired Ethernet or both.
+Ask the customer to test one device near the router; if possible request a wired test before declaring line degradation.
+Check account/FUP/QoS profile, active BNG session, recent disconnects and current area congestion/alarm data if available.
+Check ONU optical parameters and negotiated LAN link if available through NMS/ACS.
+For Wi-Fi-only symptoms, guide 2.4/5 GHz selection, router placement, channel/interference and device limitation checks.
+If network-side performance is suspected, create PERFORMANCE ticket including test method, observed speed, plan speed, time and telemetry references.
+2.3 Billing / Renewal / Suspension SOP
+Authenticate the customer before reading balance, invoice, transaction or suspension reason.
+Fetch outstanding amount, expiry/due date and recent payments from Billing/ERP.
+If payment is successful but service remains suspended, check provisioning/AAA synchronization status and trigger approved resync or create BILLING_PROVISIONING ticket.
+Do not request banking passwords, card PINs or unrelated OTPs. Do not claim payment success unless confirmed by the billing/payment system.
+For disputed charges, open BILLING_DISPUTE and transfer/escalate based on policy.
+2.4 Package Upgrade / Downgrade SOP
+Verify customer; retrieve current plan and live eligible product catalog.
+Explain recurring price, speed, FUP, commitment/renewal terms and effective date returned by the system.
+Obtain explicit caller confirmation before creating an order/change request.
+Create the request and read back the order/reference ID. If network feasibility is required, route to Sales/Provisioning rather than promising activation.
+2.5 Repeat Fault / Chronic Issue SOP
+Check tickets and call history for the same service in the previous 7/30 days.
+If the same symptom has repeated beyond the configured threshold, flag REPEAT_FAULT and escalate to NOC L2 or Field Operations.
+Include previous ticket IDs, prior resolutions and current telemetry in the handoff summary.
+3. Organization Structure
+Level
+Function
+Sample Roles
+Executive
+Operations & Customer Experience
+COO / Head of Operations / Head of CX
+Customer Operations
+Contact Center
+Customer Care Agents, Team Lead, QA, Retention Desk
+Network Operations
+NOC
+NOC L1, NOC L2, IP/Core Engineer, Access Network Engineer
+Field Operations
+Installation & Maintenance
+Field Technician, Fiber Team, Regional Supervisor
+Commercial
+Sales & Product
+Sales Agent, Product Manager, Enterprise/SME Desk
+Finance
+Billing & Collections
+Billing Support, Reconciliation, Collections
+Technology
+IT / OSS-BSS / Platforms
+CRM/BSS Admin, Integration Engineer, DevOps
+Risk
+Information Security
+Security Operations, IAM, Audit/Compliance
+
+4. Department Details
+Department
+Responsibilities Relevant to AI Contact Center
+Primary Queue
+Customer Care
+First-line support, general inquiries, complaints, ticket updates
+CARE-L1
+NOC L1
+Service status, access alarms, outage validation, session/AAA diagnostics
+NOC-L1
+NOC L2
+Recurring faults, routing/core/access complex incidents
+NOC-L2
+Field Operations
+Fiber drop, splice, splitter, ONU replacement, onsite troubleshooting
+FIELD-OPS
+Billing
+Invoice, payment, renewal, suspension, reconciliation
+BILLING
+Sales/Retention
+New connection, package change, relocation, cancellation save offers
+SALES-RETENTION
+IT/BSS
+CRM/Billing/API/identity/provisioning platform errors
+IT-BSS
+Security
+Account takeover, data/privacy concern, suspicious access
+SECURITY
+
+5. Business Workflow
+Canonical inbound ISP AI support workflow:
+Inbound SIP call enters Asterisk/PBX and receives recording/AI disclosure.
+Language is detected or selected; AI captures intent and basic service identifier.
+For account-specific information/actions, customer verification is completed.
+AI retrieves Customer 360 from CRM/BSS: service status, plan, address/area, ONU/CPE references and recent tickets.
+AI queries relevant operational systems based on intent: outage, Billing/ERP, AAA/RADIUS/BNG, OLT/ONU/NMS, ACS/TR-069.
+Decision logic identifies likely fault domain and runs only the permitted SOP steps.
+AI resolves, creates ticket/order/callback, or escalates to human queue.
+CRM interaction is written with call summary, structured diagnostics, tool results/references, disposition and transfer reason.
+Post-call analytics measure containment, repeat contact, escalation, tool latency/errors and customer outcome.
+6. Existing Customer Support Process
+Current Step
+Typical Manual Process
+Phase 1 AI Improvement
+Call reception
+Agent answers and asks account details
+AI answers instantly, detects language/intent and captures identifier.
+Verification
+Agent manually checks CRM
+OTP/API-backed verification state available to AI and passed to agent.
+Diagnosis
+Agent switches between CRM, billing, NMS and NOC chat
+AI orchestrates approved read APIs and follows deterministic ISP SOP.
+Ticketing
+Agent types free-text summary
+AI creates structured ticket with diagnostics and call summary.
+Escalation
+Agent calls/transfers NOC with verbal context
+AI routes to correct queue and sends machine-readable context.
+Repeat call
+Customer repeats history
+AI retrieves recent interactions/tickets and flags recurring issue.
+
+7. Escalation Matrix
+Priority / Trigger
+Example ISP Condition
+Escalate To
+Target Handling
+P1 Critical
+Large-area/core outage, multiple OLTs/BNG impacted, emergency service impact
+NOC L2 + Incident Manager
+Immediate automated incident linkage; AI gives only approved bulletin.
+P2 High
+Single PON/OLT port or localized outage affecting many customers
+NOC L1/L2
+Fast validation and incident/ticket correlation.
+P3 Standard
+Single-customer LOS, no session, persistent slow speed
+NOC L1 / Field Ops
+Standard support SLA; field dispatch if access fault confirmed.
+Billing High
+Payment confirmed but service not restored; repeated provisioning failure
+Billing + IT/BSS
+Billing/provisioning investigation.
+Retention
+Cancellation intent / repeated unresolved complaint
+Retention / Supervisor
+Human save/complaint handling.
+Security
+Suspected account takeover, social engineering, unauthorized account change
+Security
+Stop sensitive actions; secure transfer/escalation.
+Mandatory Human
+Caller explicitly asks for agent; low confidence on sensitive action
+Appropriate human queue
+Warm transfer with full context.
+
+8. Frequently Asked Questions
+Customer Question
+Approved Sample Answer
+Why is my internet not working?
+I can check whether your account, area, optical link or session shows an issue. I may need to verify your account first.
+My ONU LOS light is red. What does it mean?
+A red/blinking LOS usually indicates loss of optical signal. I will check for an area/access fault and can create a technical ticket if needed. Avoid repeated factory resets.
+I already paid. Why is service still off?
+I can verify the latest payment and service status. If payment is confirmed but provisioning has not restored service, I can raise a billing/provisioning case.
+Can you reset my router remotely?
+Only if remote CPE management is integrated and your organization permits that action. Otherwise I can guide a safe restart or transfer you.
+What package am I using?
+After verification, I can retrieve your current package from the CRM/Billing system.
+Is there an outage in my area?
+I can check the live outage system using your service location. I will only provide an ETA if an approved ETA is available.
+Can I talk to a person?
+Yes. I can transfer you to the appropriate support team and pass them the details already collected.
+मेरो LOS रातो छ, के गर्ने?
+LOS रातो/झिम्किरहेको छ भने अप्टिकल सिग्नल नआएको हुन सक्छ। म क्षेत्रीय समस्या वा लाइन स्टेटस जाँच गरेर आवश्यक परे टिकट खोल्न सक्छु।
+

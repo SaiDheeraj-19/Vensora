@@ -34,16 +34,33 @@ AVAILABLE_TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "customer_id": {
+                    "phone_number": {
                         "type": "string",
-                        "description": "The unique ID of the customer.",
+                        "description": "The phone number of the customer calling.",
                     },
                     "issue_summary": {
                         "type": "string",
                         "description": "A brief summary of the customer's problem.",
                     }
                 },
-                "required": ["customer_id", "issue_summary"],
+                "required": ["phone_number", "issue_summary"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_ticket_status",
+            "description": "Check the status of a customer's recent or active support tickets.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "phone_number": {
+                        "type": "string",
+                        "description": "The phone number of the customer calling.",
+                    }
+                },
+                "required": ["phone_number"],
             },
         },
     }
@@ -62,7 +79,11 @@ async def execute_tool_call(tool_name: str, arguments: str) -> str:
             return json.dumps(result)
             
         elif tool_name == "create_support_ticket":
-            result = await crm_adapter.create_support_ticket(args_dict.get("customer_id"), args_dict.get("issue_summary"))
+            result = await crm_adapter.create_support_ticket(args_dict.get("phone_number"), args_dict.get("issue_summary"))
+            return json.dumps(result)
+            
+        elif tool_name == "check_ticket_status":
+            result = await crm_adapter.check_ticket_status(args_dict.get("phone_number"))
             return json.dumps(result)
             
         else:

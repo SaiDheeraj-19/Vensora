@@ -1,0 +1,163 @@
+Technical Requirements - ISP Sample
+AI Contact Center - Phase 1 ISP Developer Test Documentation
+HimalNet Broadband Pvt. Ltd.
+Synthetic ISP Sample - Developer Test Data Only. All customer names, phone numbers, IP addresses, URLs, credentials, prices, network elements and records are fictional and must not be used in production.
+
+1. CRM API Documentation
+Sandbox base URL: https://sandbox.api.himalnet.example/crm/v1 (example domain). Authentication: OAuth 2.0 client credentials. All Phase 1 tool calls must use allowlisted endpoints and synthetic IDs.
+1.1 Get Customer 360
+GET /customers/CUST-ISP-100045 Authorization: Bearer <sandbox-token>  {   "customer_id": "CUST-ISP-100045",   "full_name": "Anil Sample",   "registered_mobile": "+977-98XXXX0101",   "preferred_language": "ne",   "segment": "Residential",   "service_status": "ACTIVE",   "service_id": "FTTH-447821",   "area_code": "KTM-LTP-07",   "plan_code": "HOME-200M",   "onu_serial": "HNTESTONU00045",   "cpe_id": "CPE-100045",   "verification": {"otp_allowed": true} }
+
+1.2 Create Technical Ticket
+POST /tickets {   "customer_id": "CUST-ISP-100045",   "service_id": "FTTH-447821",   "category": "TECHNICAL",   "subcategory": "OPTICAL_LOS",   "fault_domain": "ACCESS_FIBER",   "priority": "P3",   "summary": "LOS red; no known area outage; ONU optical state LOS; customer power-cycle already attempted.",   "source": "AI_CONTACT_CENTER",   "call_id": "CALL-20260808-000123" } Response: {"ticket_id":"TKT-ISP-784512","status":"OPEN","queue":"NOC-L1"}
+
+2. ERP API Documentation (Billing/BSS)
+In an ISP, ERP/BSS may include billing, subscription, payment, product catalog and provisioning interfaces. Phase 1 should favor read-only operations; write actions require explicit authorization and confirmation.
+2.1 Account / Billing Status
+GET /billing/accounts/CUST-ISP-100045/status {   "currency":"NPR",   "outstanding":1450.00,   "service_expiry":"2026-08-15",   "billing_status":"ACTIVE",   "last_payment":{"amount":1450.00,"status":"SUCCESS","reference":"PAY-TEST-9331"},   "provisioning_state":"ENABLED" }
+
+2.2 Product Catalog
+GET /catalog/plans?segment=Residential&area=KTM-LTP-07 [   {"plan_code":"HOME-100M","speed_mbps":100,"monthly_npr":1200,"active":true},   {"plan_code":"HOME-200M","speed_mbps":200,"monthly_npr":1450,"active":true},   {"plan_code":"HOME-300M","speed_mbps":300,"monthly_npr":1750,"active":true} ]
+
+3. Existing Database Structure
+Direct database access is not recommended for the AI agent. These logical tables are provided to help developers build sandbox APIs and test mappings.
+Logical Entity
+Key Fields
+Source / Notes
+customer
+customer_id, name, mobile, language, segment
+CRM
+service_subscription
+service_id, customer_id, plan_code, status, area_code
+CRM/BSS
+billing_account
+customer_id, balance, expiry_date, payment_status
+Billing/ERP
+radius_session
+service_id, username, nas/BNG, session_state, start_time, ipv4
+AAA/RADIUS
+onu_inventory
+onu_serial, olt_id, pon_port, onu_id, admin_state
+OSS/NMS
+onu_telemetry
+onu_serial, oper_state, rx_dbm, tx_dbm, last_seen
+NMS
+cpe_device
+cpe_id, model, firmware, wan_state, wifi_ssids
+ACS/TR-069
+network_incident
+incident_id, area/element, severity, status, eta
+NOC/Incident Mgmt
+support_ticket
+ticket_id, category, priority, state, queue, resolution
+CRM/ITSM
+call_interaction
+call_id, intent, language, verification, disposition, summary
+AI/CRM interaction store
+
+4. Existing Applications
+Application
+Purpose
+Phase 1 Integration
+CRM
+Customer/service profile, ticket history, interactions
+Read customer; read/write tickets/interactions
+Billing / ERP / BSS
+Invoices, payment, expiry, plan catalog, service status
+Primarily read; approved renewal/order requests
+AAA / RADIUS
+Authentication and subscriber session state
+Read session and failure reason via mediation API
+BNG Subscriber Portal/API
+Subscriber policy/session visibility
+Read-only diagnostics in Phase 1
+OLT / EMS / NMS
+ONU/PON/OLT state, optical levels, alarms
+Read-only via OSS mediation API
+ACS / TR-069 or USP
+CPE status and approved remote diagnostics
+Read; carefully allowlisted actions only
+Outage / Incident Manager
+Known incidents, affected areas/elements, approved ETA
+Read and link interaction/ticket
+GIS / Coverage
+Area, POP/OLT/serviceability
+Read for new connection/relocation
+Payment Gateway Aggregator
+Transaction confirmation
+Read transaction status through Billing backend
+Asterisk / PBX
+SIP, queues, recordings, transfers
+Real-time call control/integration
+
+4.1 ISP Operational Diagnostic APIs - Sample
+AAA / BNG Session
+GET /network/subscribers/FTTH-447821/session {   "session_state":"UP",   "auth_method":"PPPoE",   "bng":"BNG-TEST-01",   "ipv4":"198.51.100.45",   "profile":"HOME-200M",   "last_disconnect_reason":null }
+
+OLT / ONU Status
+GET /network/onu/HNTESTONU00045/status {   "olt_id":"OLT-TEST-LTP-01",   "pon_port":"0/1/7",   "onu_id":45,   "oper_state":"LOS",   "rx_dbm":null,   "last_seen":"2026-08-08T00:21:33+05:45",   "active_alarm":"LOSS_OF_SIGNAL" }
+
+Known Outage Lookup
+GET /network/incidents?area_code=KTM-LTP-07&status=OPEN [   {     "incident_id":"INC-TEST-20831",     "severity":"P2",     "summary":"Fiber cut affecting Test Zone 7",     "customer_message":"Service interruption is under restoration.",     "approved_eta":"2026-08-08T03:30:00+05:45"   } ]
+
+5. Existing Authentication System
+Human staff: corporate SSO + MFA; roles sourced from IAM/Directory.
+AI service: OAuth 2.0 client credentials or workload identity; separate identities per environment.
+Customer verification: registered-mobile OTP or other organization-approved factor. Verification state expires after a short configured period.
+Service-to-service calls: TLS; mTLS preferred for sensitive internal APIs; secrets stored in a managed secret vault.
+5.1 Sample JWT Claims
+{   "sub":"svc-ai-contact-center",   "aud":"himalnet-isp-api",   "scope":"crm.customer.read billing.read network.diagnostics.read ticket.write interaction.write",   "env":"sandbox",   "exp":1786134000 }
+
+6. Integration Error Handling
+Condition
+AI Behavior
+CRM timeout
+Do not invent customer status. Retry within policy, then offer human/ticket fallback.
+Billing unavailable
+Do not state balance/payment/expiry as fact; explain temporary lookup issue.
+NMS/OLT API unavailable
+Continue safe manual indicator checks; mark telemetry unavailable in ticket.
+AAA API returns unknown
+Do not assume authentication failure; escalate or create diagnostic ticket.
+Write API returns 4xx
+Do not claim ticket/order was created; surface failure and transfer/fallback.
+Write API times out after request
+Use idempotency key/query before retry to avoid duplicate ticket/order.
+Outage API lacks ETA
+Tell customer restoration is in progress if approved, but do not fabricate ETA.
+
+7. Sample API Tool Allowlist
+Tool
+Action
+P1 Mode
+get_customer
+Read customer/service profile
+Allowed
+get_billing_status
+Read balance/payment/expiry/provisioning
+Allowed after verification
+get_outage
+Read incident by area/network element
+Allowed
+get_subscriber_session
+Read AAA/BNG state
+Allowed
+get_onu_status
+Read ONU/OLT state/optical/alarm
+Allowed
+get_cpe_status
+Read ACS device/WAN/Wi-Fi metadata
+Allowed
+create_ticket
+Create support case
+Allowed with schema validation
+create_plan_change_request
+Create request, not direct network change
+Allowed after explicit confirmation
+factory_reset_cpe
+Destructive CPE action
+Not allowed in Phase 1
+modify_radius_profile
+Direct network authorization change
+Not allowed in Phase 1
+

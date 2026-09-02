@@ -16,14 +16,36 @@ active_connections: list[WebSocket] = []
 async def live_calls_websocket(websocket: WebSocket):
     """
     WebSocket endpoint for the Admin Dashboard to monitor live calls.
+    Also used by simulate_voice.py to receive barge-in events.
     """
     await websocket.accept()
     active_connections.append(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            message = await websocket.receive_text()
+            try:
+                data = json.loads(message)
+                if data.get("action") == "barge_in":
+                    call_id = data.get("call_id")
+                    barge_message = data.get("message")
+                    if call_id and barge_message:
+                        import asyncio
+                        from app.modules.telephony.event_handler import TwilioEventHandler
+                        asyncio.create_task(TwilioEventHandler.handle_barge_in(call_id, barge_message))
+                elif data.get("action") == "transcript":
+                    import asyncio
+                    asyncio.create_task(broadcast_transcript(data["call_id"], data["speaker"], data["text"]))
+                elif data.get("action") == "register":
+                    import asyncio
+                    from app.modules.telephony.event_handler import call_to_caller
+                    caller = data.get("caller_id", "Unknown")
+                    call_to_caller[data["call_id"]] = caller
+                    asyncio.create_task(broadcast_call_update(data["call_id"], data["state"], caller))
+            except Exception as e:
+                logger.error(f"Live calls ws parse error: {e}")
     except WebSocketDisconnect:
-        active_connections.remove(websocket)
+        if websocket in active_connections:
+            active_connections.remove(websocket)
 
 async def broadcast_call_update(call_id: str, state: str, caller_id: str = "Unknown"):
     if not active_connections:
@@ -34,7 +56,38 @@ async def broadcast_call_update(call_id: str, state: str, caller_id: str = "Unkn
         "caller_id": caller_id,
         "timestamp": __import__("datetime").datetime.now().isoformat()
     }
-    for connection in active_connections:
+    for connection in list(active_connections):
+        try:
+            await connection.send_json(payload)
+        except Exception:
+            pass
+
+async def broadcast_transcript(call_id: str, speaker: str, text: str):
+    if not active_connections:
+        return
+    payload = {
+        "event": "transcript",
+        "call_id": call_id,
+        "speaker": speaker,
+        "text": text,
+        "timestamp": __import__("datetime").datetime.now().isoformat()
+    }
+    for connection in list(active_connections):
+        try:
+            await connection.send_json(payload)
+        except Exception:
+            pass
+
+async def broadcast_barge_in(call_id: str, message: str):
+    if not active_connections:
+        return
+    payload = {
+        "event": "barge_in",
+        "call_id": call_id,
+        "message": message,
+        "timestamp": __import__("datetime").datetime.now().isoformat()
+    }
+    for connection in list(active_connections):
         try:
             await connection.send_json(payload)
         except Exception:
@@ -49,6 +102,10 @@ async def twilio_incoming(request: Request):
     form_data = await request.form()
     call_sid = form_data.get("CallSid", "unknown")
     caller = form_data.get("From", "unknown")
+    
+    from app.modules.telephony.event_handler import call_to_caller
+    call_to_caller[call_sid] = caller
+    
     logger.info(f"Incoming call from {caller} (CallSid: {call_sid})")
     
     # The host header gives us the domain ngrok or production uses

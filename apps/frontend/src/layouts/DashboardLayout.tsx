@@ -7,6 +7,8 @@ export default function DashboardLayout() {
   const token = localStorage.getItem('token');
   const [role, setRole] = useState<string>('');
 
+  const [openTicketsCount, setOpenTicketsCount] = useState(0);
+
   useEffect(() => {
     if (!token) return;
     
@@ -18,6 +20,17 @@ export default function DashboardLayout() {
     } catch (e) {
       console.error("Failed to decode token");
     }
+
+    // Fetch tickets to get the OPEN count
+    fetch('http://localhost:8000/api/v1/crm/tickets')
+      .then(res => res.json())
+      .then(data => {
+          if (Array.isArray(data)) {
+              const openCount = data.filter(t => t.status === 'OPEN').length;
+              setOpenTicketsCount(openCount);
+          }
+      })
+      .catch(console.error);
   }, [token]);
 
   if (!token) {
@@ -52,6 +65,17 @@ export default function DashboardLayout() {
         
         <NavLink to="/history" className={({ isActive }) => isActive ? 'active' : ''}>
           <Book size={18} /> Call History
+        </NavLink>
+        
+        <NavLink to="/tickets" className={({ isActive }) => isActive ? 'active' : ''} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Activity size={18} /> Tickets
+          </div>
+          {openTicketsCount > 0 && (
+              <span style={{ background: 'var(--primary-color)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  {openTicketsCount}
+              </span>
+          )}
         </NavLink>
         
         <NavLink to="/contacts" className={({ isActive }) => isActive ? 'active' : ''}>

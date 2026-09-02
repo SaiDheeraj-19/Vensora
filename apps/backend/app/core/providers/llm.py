@@ -24,22 +24,22 @@ class GroqProvider(LLMProvider):
     def __init__(self):
         self.settings = get_settings()
         # Fallback to env var if not in settings
-        self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
+        self.api_key = os.getenv("GROQ_API_KEY")
+        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         self.enabled = bool(self.api_key)
         
         try:
             from openai import AsyncOpenAI
             if self.enabled:
                 self.client = AsyncOpenAI(
-                    base_url="https://openrouter.ai/api/v1",
+                    base_url="https://api.groq.com/openai/v1",
                     api_key=self.api_key, 
                     timeout=10.0
                 )
-                logger.info("OpenRouterProvider initialized.")
+                logger.info("GroqProvider initialized with official API.")
             else:
                 self.client = None
-                logger.warning("OPENROUTER_API_KEY not set. LLM running in MOCK mode.")
+                logger.warning("GROQ_API_KEY not set. LLM running in MOCK mode.")
         except ImportError:
             logger.warning("openai library not installed. LLM running in MOCK mode.")
             self.client = None

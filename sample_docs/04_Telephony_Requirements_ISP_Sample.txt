@@ -1,0 +1,168 @@
+Telephony Requirements - ISP Sample
+AI Contact Center - Phase 1 ISP Developer Test Documentation
+HimalNet Broadband Pvt. Ltd.
+Synthetic ISP Sample - Developer Test Data Only. All customer names, phone numbers, IP addresses, URLs, credentials, prices, network elements and records are fictional and must not be used in production.
+
+1. SIP Provider Details
+Parameter
+Synthetic Phase 1 Value
+SIP Provider
+TestTel SIP Lab
+Trunk Type
+SIP trunk over TLS preferred; UDP allowed only in isolated test lab
+SBC / Proxy
+sip-test.provider.example
+Signaling Port
+5061 TLS / 5060 UDP test
+Media
+RTP/SRTP depending on lab capability
+Codecs
+G.711 A-law / μ-law; Opus for WebRTC/internal where supported
+DTMF
+RFC 2833 / RFC 4733
+Concurrent Calls
+20 test channels
+Caller ID
+Synthetic test DIDs only
+SIP Authentication
+Secret stored in vault; never embedded in prompts or documents in production
+
+2. Existing PBX Information
+Item
+Sample
+PBX
+Asterisk 22 LTS test environment
+AI Entry Extension
+7000
+Customer Care Queue
+8001
+NOC L1 Queue
+8002
+Billing Queue
+8003
+Sales/Retention Queue
+8004
+Supervisor Queue
+8090
+Recording
+Enabled in test environment according to configured policy
+Call ID
+PBX uniqueid mapped to AI conversation_id and CRM call_id
+
+Recommended media/control flow: SIP Provider -> SBC/Asterisk -> AI Voice Gateway -> streaming STT -> Orchestrator/LLM + RAG/Tools -> streaming TTS -> Asterisk -> Caller. Human handoff returns the live call to an Asterisk queue while the integration layer pushes structured context to the agent desktop/CRM.
+3. IVR Flow
+Play approved call recording / AI-assistant disclosure.
+Language: “Press 1 for English, 2 for Nepali, or speak naturally.” Automatic detection may bypass the menu when confidence is high.
+Ask open intent question: “How can I help with your internet service today?”
+Classify into Technical / Billing & Renewal / Package & Sales / Installation & Relocation / Complaint / Human Agent.
+For Technical, ask for service identifier and verify only when account-specific data is needed.
+AI performs ISP diagnostic workflow with relevant tools.
+If unresolved or escalation trigger fires, select queue based on fault domain and priority.
+Before transfer, play a short transition and send context to the agent desktop/CRM.
+If human queue is closed, offer approved callback/ticket path; do not falsely claim a live agent is available.
+3.1 DTMF Fallback Menu
+Key
+Route
+1
+Technical Support
+2
+Billing / Renewal / Payment
+3
+New Connection / Package / Upgrade
+4
+Installation / Relocation
+0
+Human Agent / Operator
+9
+Repeat menu
+
+4. Phone Numbers
+Purpose
+Synthetic Number / Identifier
+Main Inbound Support
++977-01-555-0100 (TEST ONLY)
+Toll-Free Test DID
+1660-TEST-ISP (placeholder)
+Outbound CLI
++977-01-555-0199 (TEST ONLY)
+Internal AI Extension
+7000
+Customer Care
+8001
+NOC L1
+8002
+Billing
+8003
+Sales/Retention
+8004
+
+5. Call Routing Rules
+Condition
+Primary Route
+Fallback / Notes
+No internet + LOS/ONU optical alarm
+NOC-L1 / FIELD-OPS
+If active shared incident, link outage before field dispatch.
+No internet + account suspended/expired
+BILLING/self-service
+Avoid technical dispatch unless independent network fault exists.
+No internet + no AAA session, billing active
+NOC-L1
+Include auth/provisioning reason codes.
+Slow speed Wi-Fi only
+CARE-L1 / AI self-resolution
+Transfer to technical if unresolved.
+Wired performance issue / congestion alarm
+NOC-L1
+Escalate L2 for recurring/systemic issue.
+Payment dispute
+BILLING
+Supervisor for high-risk dispute.
+New connection / package inquiry
+SALES
+Create lead if integration available.
+Cancellation intent
+SALES-RETENTION
+Human handling preferred.
+Caller says agent/human/operator
+Best matching human queue
+Do not force continued AI conversation.
+Security/account takeover concern
+SECURITY / Supervisor
+Stop sensitive actions.
+
+6. SIP / Voice Test Cases
+TC
+Test
+Pass Condition
+TEL-01
+Inbound G.711 call to AI extension
+Two-way audio stable; call IDs correlated.
+TEL-02
+Nepali speech recognition
+Intent/keywords recognized sufficiently to execute correct flow; fallback offered on low confidence.
+TEL-03
+Barge-in while TTS speaking
+Playback stops and caller speech is processed without losing conversation state.
+TEL-04
+DTMF fallback
+Keys route to correct menu/intent.
+TEL-05
+Human transfer
+Live call reaches queue; agent receives summary and verification state.
+TEL-06
+Queue unavailable
+AI follows after-hours/callback policy; no dead air or false availability.
+TEL-07
+Long silence/no input
+Reprompt, then fallback/termination policy.
+TEL-08
+API latency during call
+AI uses short hold/filler prompts and does not fabricate result.
+TEL-09
+SIP re-INVITE/hold transfer behavior
+Media remains valid according to PBX design.
+TEL-10
+Call recording metadata
+Recording reference stored only when policy allows and linked to call ID.
+

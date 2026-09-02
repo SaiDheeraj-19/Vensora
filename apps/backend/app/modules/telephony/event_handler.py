@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 active_calls: Dict[str, CallStateMachine] = {}
 # Active Twilio WebSockets for streaming audio back
 active_websockets: Dict[str, WebSocket] = {}
+call_to_stream: Dict[str, str] = {}
+call_to_caller: Dict[str, str] = {}
 
 class TwilioEventHandler:
     """
@@ -39,6 +41,7 @@ class TwilioEventHandler:
                 
                 twilio_stream_manager.start_stream(stream_sid, call_sid)
                 active_websockets[stream_sid] = websocket
+                call_to_stream[call_sid] = stream_sid
                 
                 state_machine = CallStateMachine(initial_state=CallStateEnum.INITIATING)
                 active_calls[call_sid] = state_machine
@@ -54,9 +57,12 @@ class TwilioEventHandler:
                 if stream_sid:
                     twilio_stream_manager.stop_stream(stream_sid)
                     active_websockets.pop(stream_sid, None)
-                if call_sid and call_sid in active_calls:
-                    active_calls[call_sid].transition_to(CallStateEnum.COMPLETED, reason="Twilio Disconnected")
-                    del active_calls[call_sid]
+                if call_sid:
+                    call_to_stream.pop(call_sid, None)
+                    call_to_caller.pop(call_sid, None)
+                    if call_sid in active_calls:
+                        active_calls[call_sid].transition_to(CallStateEnum.COMPLETED, reason="Twilio Disconnected")
+                        del active_calls[call_sid]
                 break
 
     @staticmethod
@@ -100,6 +106,9 @@ class TwilioEventHandler:
         if not stream_sid or not utterance:
             return
             
+        from app.modules.telephony.router import broadcast_transcript
+        asyncio.create_task(broadcast_transcript(call_sid, "customer", utterance))
+            
         state_machine = active_calls.get(call_sid)
         if state_machine:
             state_machine.transition_to(CallStateEnum.PROCESSING, reason="Processing utterance")
@@ -125,8 +134,12 @@ class TwilioEventHandler:
             pass
 
         # 2. Call the LangGraph AI
-        response_text = await process_utterance(call_sid, utterance)
+        caller_id = call_to_caller.get(call_sid, "Unknown")
+        response_text = await process_utterance(call_sid, utterance, caller_id)
         logger.info(f"AI Response: {response_text}")
+        
+        from app.modules.telephony.router import broadcast_transcript
+        await broadcast_transcript(call_sid, "ai", response_text)
         
         if state_machine:
             state_machine.transition_to(CallStateEnum.RESPONDING, reason="Playing TTS")
@@ -156,3 +169,42 @@ class TwilioEventHandler:
             
         except Exception as e:
             logger.error(f"TTS streaming failed: {e}")
+
+    @staticmethod
+    async def handle_barge_in(call_sid: str, message: str):
+        logger.info(f"[{call_sid}] ADMIN BARGE-IN: {message}")
+        
+        from app.modules.telephony.router import broadcast_barge_in, broadcast_transcript
+        await broadcast_barge_in(call_sid, message)
+        await broadcast_transcript(call_sid, "admin", message)
+        
+        stream_sid = call_to_stream.get(call_sid)
+        if not stream_sid:
+            return
+            
+        websocket = active_websockets.get(stream_sid)
+        if not websocket:
+            return
+            
+        # Stop current AI audio immediately
+        TwilioEventHandler.handle_speech_started({"stream_sid": stream_sid})
+        
+        # Synthesize admin message and stream
+        from app.modules.voice.tts_service import tts_service
+        try:
+            audio_bytes_16k = await tts_service.synthesize_speech(message)
+            pcm_8k, _ = audioop.ratecv(audio_bytes_16k, 2, 1, 16000, 8000, None)
+            ulaw_audio = audioop.lin2ulaw(pcm_8k, 2)
+            b64_audio = base64.b64encode(ulaw_audio).decode("utf-8")
+            
+            media_msg = {
+                "event": "media",
+                "streamSid": stream_sid,
+                "media": {
+                    "payload": b64_audio
+                }
+            }
+            await websocket.send_text(json.dumps(media_msg))
+            logger.info(f"[{stream_sid}] Streamed admin barge-in back to Twilio.")
+        except Exception as e:
+            logger.error(f"Barge-in TTS streaming failed: {e}")

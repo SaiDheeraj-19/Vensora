@@ -22,24 +22,17 @@ class QdrantProvider(VectorDBProvider):
     def __init__(self):
         self.settings = get_settings()
         self.collection_name = "vensora_knowledge"
-        self.enabled = True
         
-        try:
-            from qdrant_client import QdrantClient
-            self.client = QdrantClient(host=self.settings.QDRANT_HOST, port=self.settings.QDRANT_PORT)
-            self._ensure_collection()
-            logger.info("QdrantProvider initialized.")
-        except ImportError:
-            logger.warning("qdrant-client not installed. Vector DB running in MOCK mode.")
-            self.client = None
-            self.enabled = False
+        from qdrant_client import QdrantClient
+        logger.info(f"Connecting to Qdrant at {self.settings.QDRANT_HOST}:{self.settings.QDRANT_PORT}")
+        self.client = QdrantClient(host=self.settings.QDRANT_HOST, port=self.settings.QDRANT_PORT)
+        self._ensure_collection()
+        logger.info("QdrantProvider initialized.")
 
     def is_enabled(self) -> bool:
-        return self.enabled
+        return True
 
     async def check_health(self) -> ProviderHealth:
-        if not self.enabled or not self.client:
-            return ProviderHealth(HealthState.MOCK, "qdrant-client missing")
         try:
             self.client.get_collections()
             return ProviderHealth(HealthState.HEALTHY)
@@ -62,10 +55,6 @@ class QdrantProvider(VectorDBProvider):
             logger.error(f"Failed to ensure Qdrant collection: {e}")
 
     def search(self, query: str, limit: int = 3) -> List[Dict[str, Any]]:
-        if not self.enabled or not self.client:
-            logger.info(f"MOCK: Returning empty search results for: '{query}'")
-            return []
-            
         try:
             from app.core.providers.registry import registry
             try:
@@ -89,9 +78,6 @@ class QdrantProvider(VectorDBProvider):
             return []
 
     def ingest_chunks(self, chunks: List[str], vectors: List[List[float]]) -> bool:
-        if not self.enabled or not self.client:
-            logger.info(f"MOCK: Ingested {len(chunks)} chunks")
-            return True
         try:
             from qdrant_client.models import PointStruct
             import uuid

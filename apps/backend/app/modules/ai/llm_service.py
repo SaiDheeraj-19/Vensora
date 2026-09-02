@@ -13,10 +13,10 @@ class GroqService:
         try:
             from openai import AsyncOpenAI
             self.client = AsyncOpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=os.getenv("OPENROUTER_API_KEY", "mock_key")
+                base_url="https://api.groq.com/openai/v1",
+                api_key=os.getenv("GROQ_API_KEY", "mock_key")
             )
-            self.model = "meta-llama/llama-3.1-8b-instruct" # Using OpenRouter
+            self.model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
             self.enabled = True
         except ImportError:
             logger.warning("groq library not installed. LLM service will use mock mode.")

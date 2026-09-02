@@ -23,6 +23,7 @@ from .confidence import confidence_evaluator
 class AgentState(TypedDict):
     """The state of the conversation graph."""
     call_id: str
+    caller_id: str
     messages: Annotated[Sequence[Dict[str, str]], operator.add]
     context: str
     guardrail_safe: bool
@@ -79,6 +80,19 @@ async def generate_node(state: AgentState) -> dict:
     system_prompt = prompt_service.get_system_prompt()
     system_prompt += f"\nContext:\n{state.get('context', 'None')}"
     
+    # 1.5 Fetch CRM Context dynamically!
+    from app.modules.crm.adapter import crm_adapter
+    caller_id = state.get("caller_id")
+    if caller_id:
+        tickets = await crm_adapter.check_ticket_status(caller_id)
+        if tickets:
+            system_prompt += f"\n\n[SYSTEM CRM DATA]\nThe customer calling is from phone number: {caller_id}.\nThey have the following recent tickets:\n"
+            for t in tickets:
+                system_prompt += f"- Ticket ID: {t['ticket_id']} | Status: {t['status']} | Issue: {t['title']}\n"
+            system_prompt += "If they ask about an existing issue, use this context to update them."
+        else:
+            system_prompt += f"\n\n[SYSTEM CRM DATA]\nThe customer calling is from phone number: {caller_id}.\nThey have NO recent tickets."
+    
     # 2. Token Optimization (Memory Manager)
     # Re-inject the system prompt as the first message
     optimized_messages = memory_manager.optimize_history(state["messages"])
@@ -90,7 +104,7 @@ async def generate_node(state: AgentState) -> dict:
 async def escalate_node(state: AgentState) -> dict:
     """Handle low confidence / guardrail failures by preparing for human handoff."""
     logger.debug("Entering escalate_node")
-    response = "I'm having a little trouble understanding. Please hold while I transfer you to a human agent."
+    response = "I am having a little trouble understanding. My senior will speak with you shortly."
     
     # In a real system, this would fire an event back to the Telephony state machine to trigger Asterisk Dial()
     
@@ -141,11 +155,11 @@ def build_graph():
 # Compile the graph globally
 conversational_agent = build_graph()
 
-async def process_utterance(call_id: str, utterance: str) -> str:
+async def process_utterance(call_id: str, utterance: str, caller_id: str = "+1234567890") -> str:
     """
     Main entry point called by the Telephony module when a user finishes speaking.
     """
-    logger.info(f"[{call_id}] Processing user utterance: '{utterance}'")
+    logger.info(f"[{call_id}] Processing user utterance: '{utterance}' (Caller: {caller_id})")
     
     if not conversational_agent:
         # Fallback if LangGraph isn't installed during audit
@@ -154,6 +168,7 @@ async def process_utterance(call_id: str, utterance: str) -> str:
     # Execute the graph
     inputs = {
         "call_id": call_id,
+        "caller_id": caller_id,
         "messages": [{"role": "user", "content": utterance}], 
         "context": "",
         "guardrail_safe": True,

@@ -5,6 +5,7 @@ from sqlalchemy import String, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database.base import Base
+from app.modules.agents.models import Agent
 
 class CampaignStatus(str, enum.Enum):
     DRAFT = "DRAFT"
